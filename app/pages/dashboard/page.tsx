@@ -82,9 +82,9 @@ export default function Dashboard() {
   
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+   <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r p-6 shadow-md">
+     <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r p-6 shadow-md">
         <div className="flex flex-col leading-tight ml-2 ">
           <div className="text-xs font-bold text-blue-700">WorkGrid</div>
           <span className="text-2xl font-semibold text-gray-800 -mt-1">Trello</span>
@@ -123,7 +123,7 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10">
+       <main className="flex-1 p-4 md:p-10">
         {selectedBoard === "welcome" && (
           <>
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-8 text-white shadow-md mb-6">
