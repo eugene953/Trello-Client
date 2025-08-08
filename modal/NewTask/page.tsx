@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,8 +10,9 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateProjectModal ({ onClose, onCreated }: Props) {
+export default function CreateTaskModal({ onClose, onCreated }: Props) {
   const [token, setToken] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<number | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -23,7 +23,13 @@ export default function CreateProjectModal ({ onClose, onCreated }: Props) {
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    const storedProjectId = localStorage.getItem("createdProjectId");
+
+  console.log("Token from localStorage:", storedToken);
+  console.log("ProjectId from localStorage:", storedProjectId);
+
     if (storedToken) setToken(storedToken);
+    if (storedProjectId) setProjectId(Number(storedProjectId));
   }, []);
 
   const handleChange = (
@@ -34,35 +40,49 @@ export default function CreateProjectModal ({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title.trim()) {
-      setError("Title is required");
-      return;
-    }
+  e.preventDefault();
+  setError("");
 
-    try {
-   const res = await axios.post(
-        `${API_BASE_URL}/api/createProject`,
-        {
-          ...form,
-          dueDate: form.dueDate || null,
+  console.log("Submitting with projectId:", projectId);
+
+  if (!form.title.trim()) {
+    setError("Title is required");
+    return;
+  }
+
+  if (!projectId) {
+    setError("Project ID is missing.");
+    return;
+  }
+
+  try {
+    await axios.post(
+      `${API_BASE_URL}/api/createTask`,
+      {
+        title: form.title,
+        description: form.description || null,
+        status: form.status,
+        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+        projectId: projectId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      onCreated(); // refresh task list
-      onClose();   // close modal
-    } catch (err) {
-      console.error(err);
-      setError("Failed to create project. Please try again.");
-    }
-  };
+      }
+    );
+
+    onCreated(); // refresh task list
+    onClose();   // close modal
+  } catch (err) {
+    console.error(err);
+    setError("Failed to create task. Please try again.");
+  }
+};
+
 
   return (
-   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit}
         className="bg-white shadow-xl rounded-xl p-6 w-full max-w-md sm:max-w-lg md:max-w-xl space-y-4 relative"
@@ -76,7 +96,7 @@ export default function CreateProjectModal ({ onClose, onCreated }: Props) {
           <FiX />
         </button>
 
-        <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Create New Project</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Create New Task</h2>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -132,10 +152,9 @@ export default function CreateProjectModal ({ onClose, onCreated }: Props) {
           type="submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
-          Create Project
+          Create Task
         </button>
       </form>
     </div>
-);
-};
-
+  );
+}

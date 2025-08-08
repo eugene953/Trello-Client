@@ -1,67 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import { FiX } from "react-icons/fi";
 import { API_BASE_URL } from "@/app/utils/config";
 
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  dueDate: string | null;
+  projectId: number;
+}
+
 interface EditTaskModalProps {
-  taskId: number;
+  task: Task; 
   onClose: () => void;
   onUpdated: () => void;
 }
 
-export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalProps) {
-  
-  const [loading, setLoading] = useState(true);
+export default function EditTaskModal({ task, onClose, onUpdated }: EditTaskModalProps) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    dueDate: "",
-    status: "pending",
+    title: task.title || "",
+    description: task.description || "",
+    dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
+    status: task.status || "pending",
   });
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) 
-      return;
-    
-
-    if (!taskId) {
-      setError("Task ID not found");
-      setLoading(false);
-      return;
-    }
-
-    const fetchTask = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/getTaskById/${taskId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const { title, description, dueDate, status } = response.data;
-
-        setForm({
-          title,
-          description: description || "",
-          dueDate: dueDate ? dueDate.slice(0, 10) : "",
-          status: status || "pending",
-        });
-      } catch (err: any) {
-        console.error("Fetch task error:", err.response?.data || err.message);
-        setError("Failed to fetch task.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTask();
-  }, [taskId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -79,41 +47,31 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
     }
 
     const token = localStorage.getItem("token");
-    if (!token) 
-      return;
-    
+    if (!token) return;
 
+    setLoading(true);
     try {
       await axios.put(
-        `${API_BASE_URL}/api/updateTask/${taskId}`,
+        `${API_BASE_URL}/api/updateTask/${task.id}`,
         {
           ...form,
           dueDate: form.dueDate || null,
+          projectId: task.projectId,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      onUpdated(); 
-      onClose(); 
+      onUpdated();
+      onClose();
     } catch (err: any) {
       console.error("Update task error:", err?.response?.data || err.message);
       setError("Failed to update task. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
- if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="text-white text-lg">Loading task...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 z-5 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 ">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 relative">
         <button
           onClick={onClose}
@@ -128,6 +86,7 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+        
           <div>
             <label className="block text-sm font-medium mb-1">Title *</label>
             <input
@@ -140,6 +99,7 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
             />
           </div>
 
+        
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <textarea
@@ -151,6 +111,7 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
             />
           </div>
 
+    
           <div>
             <label className="block text-sm font-medium mb-1">Due Date</label>
             <input
@@ -162,6 +123,7 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
             />
           </div>
 
+       
           <div>
             <label className="block text-sm font-medium mb-1">Status</label>
             <select
@@ -175,11 +137,13 @@ export default function EditTask({ taskId, onClose, onUpdated }: EditTaskModalPr
             </select>
           </div>
 
+        
           <button
             type="submit"
             className="w-full bg-green-600 text-white font-medium py-2 rounded transition"
+            disabled={loading}
           >
-            Update Task
+            {loading ? "Updating..." : "Update Task"}
           </button>
         </form>
       </div>
